@@ -203,7 +203,7 @@ function AppWrapper() {
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-white">
-      <Navbar historyCount={history.length} />
+      <Navbar />
 
       <Routes>
 

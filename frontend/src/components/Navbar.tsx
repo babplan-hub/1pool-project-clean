@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 
-const Navbar = ({ historyCount }: any) => {
+const Navbar = () => {
+  
   const location = useLocation();
 
   const menus = [
