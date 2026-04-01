@@ -8,61 +8,61 @@ const TutorList = () => {
     {
       title: "Official 8 Ball Pool Rules",
       category: "Rules",
-      link: "https://www.youtube.com/watch?v=9Hk3d7s6R3Q",
+      link: "https://youtu.be/0vvdEBZs8B8?si=eQgVmv6TQoAESMJb",
     },
     {
       title: "Snooker Rules Explained",
       category: "Rules",
-      link: "https://www.youtube.com/watch?v=YkWk1vYb8oQ",
+      link: "https://youtu.be/UkoVN59NJ4g?si=pQ9cg6DiRk3NO_lx",
     },
     {
       title: "How to Rack 8 Ball Properly",
       category: "Rules",
-      link: "https://www.youtube.com/watch?v=EDY5nK1Y3xE",
+      link: "https://youtu.be/7n_H-B5ffYM?si=Und_4JAbPcrDcTOS",
     },
 
     // BASIC
     {
       title: "How to Hold a Pool Cue Correctly",
       category: "Basic",
-      link: "https://www.youtube.com/watch?v=Fh3lQb4lF1M",
+      link: "https://www.youtube.com/watch?v=5wNbgWxavbQ",
     },
     {
       title: "Beginner Pool Lesson",
       category: "Basic",
-      link: "https://www.youtube.com/watch?v=4nP4C1d3zAg",
+      link: "https://youtu.be/T_R9lqtdN74?si=TbVVhNEIAew8G2N8",
     },
     {
       title: "Basic Aiming Technique",
       category: "Basic",
-      link: "https://www.youtube.com/watch?v=5bXKzWl3J2E",
+      link: "https://youtu.be/6s7r9rWqqE4?si=FITJgzrFsfYDwB4B",
     },
     {
       title: "Bridge Hand Technique",
       category: "Basic",
-      link: "https://www.youtube.com/watch?v=7p3sV4c9b2Q",
+      link: "https://youtu.be/WG-FgyXs0b4?si=IJDKBc-SLA1MrRY1",
     },
 
     // TECHNIQUE
     {
       title: "Spin Control Tutorial",
       category: "Technique",
-      link: "https://www.youtube.com/watch?v=Kzj4v7d9n5A",
+      link: "https://youtu.be/PgI7pl1itMw?si=KQ6YIdrEeiOhHK-4",
     },
     {
       title: "Draw Shot Masterclass",
       category: "Technique",
-      link: "https://www.youtube.com/watch?v=6Lk3b9v2P8M",
+      link: "https://youtu.be/UVJ3GpzZlLo?si=aaxqG70Q_BtsDgxU",
     },
     {
       title: "Advanced Position Play",
       category: "Technique",
-      link: "https://www.youtube.com/watch?v=3gHj4d9p1KQ",
+      link: "https://youtu.be/zAaJdKFDEXE?si=YuC5v0rrKP6JoYaP",
     },
     {
       title: "Cue Ball Control Secrets",
       category: "Technique",
-      link: "https://www.youtube.com/watch?v=2fKj9d3L0P8",
+      link: "https://youtu.be/JCIivQPsvQk?si=y8xCeIBxv0cIvUGL",
     },
   ];
 

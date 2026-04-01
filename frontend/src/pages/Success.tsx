@@ -19,13 +19,11 @@ const Success = () => {
 
       <div className="bg-white/5 border border-white/10 p-10 rounded-2xl w-105 text-center">
 
-
         {/* ✅ COMPLETE */}
         <h2 className="text-2xl mb-2 font-semibold text-green-400">
           Payment Complete
         </h2>
 
-        {/* 🔥 ข้อความที่คุณอยากได้ */}
         <p className="text-white/60 mb-6 text-sm">
           กรุณาแคปหน้าจอนี้ไว้เป็นหลักฐานการชำระเงิน
         </p>
@@ -36,22 +34,28 @@ const Success = () => {
           <p className="text-sm mb-2">Table: {table}</p>
           <p className="text-sm mb-2">Payment: {method}</p>
 
-          <div className="mb-3">
-            <p className="text-white/50 text-xs">Slots</p>
-            {slots.map((s: string, i: number) => (
-              <p key={i} className="text-sm">{s}</p>
-            ))}
-          </div>
+          {/* 🔥 FIX: optional chaining กัน crash ถ้า slots undefined */}
+          {slots && slots.length > 0 && (
+            <div className="mb-3">
+              <p className="text-white/50 text-xs">Slots</p>
+              {slots.map((s: string, i: number) => (
+                <p key={i} className="text-sm">{s}</p>
+              ))}
+            </div>
+          )}
 
-          <div className="mb-3">
-            <p className="text-white/50 text-xs">Items</p>
-            {cart.map((item: any) => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span>{item.name} × {item.qty}</span>
-                <span>฿{item.price * item.qty}</span>
-              </div>
-            ))}
-          </div>
+          {/* 🔥 FIX: optional chaining กัน crash ถ้า cart undefined */}
+          {cart && cart.length > 0 && (
+            <div className="mb-3">
+              <p className="text-white/50 text-xs">Items</p>
+              {cart.map((item: any) => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span>{item.name} × {item.qty}</span>
+                  <span>฿{item.price * item.qty}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="border-t border-white/10 my-3" />
 

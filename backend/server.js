@@ -1,4 +1,4 @@
-require("dotenv").config({ path: __dirname + "/.env" }); // 🔥 FIX สำคัญสุด
+require("dotenv").config({ path: __dirname + "/.env" });
 
 const express = require("express");
 const cors = require("cors");
@@ -11,264 +11,182 @@ app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 // -----------------------------
-// DEBUG ENV
+// 🔥 HELPER
 // -----------------------------
-console.log("URL:", process.env.SUPABASE_URL);
-console.log("KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 25));
-
-// -----------------------------
-// TEST
-// -----------------------------
-app.get("/", (req, res) => {
-  res.send("Pool Backend Running");
-});
+// ปรับให้ Normalize ได้สะอาดขึ้น ทั้งช่องว่างและขีดกลาง
+const normalizeSlot = (slot) => slot.replace(/\s/g, "").replace(/-/g, "").trim();
 
 // -----------------------------
-// TEST DB
-// -----------------------------
-app.get("/test-db", async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("tables")
-      .select("*")
-      .limit(1);
-
-    if (error) throw error;
-
-    res.json({ message: "DB Connected", data });
-  } catch (err) {
-    console.error("❌ TEST DB ERROR:", err);
-    res.status(500).json({ error: "DB failed" });
-  }
-});
-
-// -----------------------------
-// GET TABLES
-// -----------------------------
-app.get("/tables", async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("tables")
-      .select("*")
-      .order("id", { ascending: true });
-
-    if (error) throw error;
-
-    res.json(data);
-  } catch (err) {
-    console.error("❌ TABLE ERROR:", err);
-    res.status(500).json({ error: "Failed to fetch tables" });
-  }
-});
-
-// -----------------------------
-// GET FOODS
-// -----------------------------
-app.get("/foods", async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("foods")
-      .select("*");
-
-    if (error) throw error;
-
-    res.json(data);
-  } catch (err) {
-    console.error("❌ FOOD ERROR:", err);
-    res.status(500).json({ error: "Failed to fetch foods" });
-  }
-});
-
-// -----------------------------
-// GET BOOKINGS
-// -----------------------------
-app.get("/bookings", async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("bookings")
-      .select("*")
-      .order("start_time", { ascending: false });
-
-    if (error) throw error;
-
-    res.json(data);
-  } catch (err) {
-    console.error("❌ BOOKINGS ERROR:", err);
-    res.status(500).json({ error: "Failed to fetch bookings" });
-  }
-});
-
-// -----------------------------
-// DELETE BOOKING
-// -----------------------------
-app.delete("/booking/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const { error } = await supabase
-      .from("bookings")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
-
-    res.json({ message: "Deleted" });
-  } catch (err) {
-    console.error("❌ DELETE ERROR:", err);
-    res.status(500).json({ error: "Delete failed" });
-  }
-});
-
-// -----------------------------
-// CREATE BOOKING (FULL LOGIC)
-// -----------------------------
-app.post("/booking", async (req, res) => {
-  try {
-    const { table_no, total, slots } = req.body;
-
-    if (!table_no) {
-      return res.status(400).json({ error: "Missing table" });
-    }
-
-    const now = new Date().toISOString();
-
-    // -----------------------------
-    // FOOD ONLY
-    // -----------------------------
-    if (!slots || slots.length === 0) {
-      const { error } = await supabase
-        .from("bookings")
-        .insert([
-          {
-            table_no,
-            slot: "FOOD",
-            start_time: now,
-            end_time: now,
-            total
-          }
-        ]);
-
-      if (error) throw error;
-
-      return res.json({ message: "Food order success" });
-    }
-
-    // -----------------------------
-    // PARSE SLOT
-    // -----------------------------
-    const parseSlot = (slot) => {
-      const [start, end] = slot.split(" - ");
-      const today = new Date().toISOString().split("T")[0];
-
-      const start_time = new Date(`${today} ${start}`);
-      const end_time = new Date(`${today} ${end}`);
-
-      if (end_time <= start_time) {
-        end_time.setDate(end_time.getDate() + 1);
-      }
-
-      return { start_time, end_time };
-    };
-
-    // -----------------------------
-    // CHECK CONFLICT
-    // -----------------------------
-    const { data: existing = [] } = await supabase
-      .from("bookings")
-      .select("start_time, end_time")
-      .eq("table_no", table_no)
-      .gt("end_time", now);
-
-    for (let slot of slots) {
-      const { start_time, end_time } = parseSlot(slot);
-
-      const isConflict = existing.some((b) => {
-        const bStart = new Date(b.start_time);
-        const bEnd = new Date(b.end_time);
-
-        return start_time < bEnd && end_time > bStart;
-      });
-
-      if (isConflict) {
-        return res.status(400).json({
-          error: `Slot ${slot} already booked`
-        });
-      }
-    }
-
-    // -----------------------------
-    // INSERT MULTIPLE
-    // -----------------------------
-    const inserts = slots.map((slot) => {
-      const { start_time, end_time } = parseSlot(slot);
-
-      return {
-        table_no,
-        slot,
-        start_time,
-        end_time,
-        total
-      };
-    });
-
-    const { error } = await supabase
-      .from("bookings")
-      .insert(inserts);
-
-    if (error) throw error;
-
-    res.json({ message: "Booking success" });
-
-  } catch (err) {
-    console.error("❌ SERVER ERROR:", err);
-    res.status(500).json({ error: "Booking failed" });
-  }
-});
-
-// -----------------------------
-// GET BOOKED SLOTS
+// 🔥 GET BOOKED SLOTS (FIXED)
 // -----------------------------
 app.get("/booked-slots/:tableId", async (req, res) => {
   try {
-    const { tableId } = req.params;
-
-    const now = new Date().toISOString();
+    const tableId = req.params.tableId;
+    // ใช้ช่วงเวลาของ "วันนี้" ทั้งหมดเพื่อให้ Frontend กรองได้แม่นยำ
+    const today = new Date().toISOString().split("T")[0];
 
     const { data, error } = await supabase
       .from("bookings")
-      .select("*")
+      .select("slot, start_time, end_time")
       .eq("table_no", tableId)
-      .gt("end_time", now);
+      .gte("end_time", `${today}T00:00:00Z`); // ดึงตั้งแต่ต้นวันมาเช็ค
 
     if (error) throw error;
 
-    res.json(data);
+    // ส่งออกไปทั้ง slot ที่ normalize แล้ว และเวลาจริง
+    res.json(data.map((b) => ({ 
+      slot: normalizeSlot(b.slot),
+      start: b.start_time,
+      end: b.end_time
+    })));
 
   } catch (err) {
-    console.error("❌ SLOT ERROR:", err);
-    res.status(500).json({ error: "Failed" });
+    console.error("❌ BOOKED SLOTS ERROR:", err);
+    res.status(500).json({ error: "Failed to load slots" });
   }
 });
 
 // -----------------------------
-// AUTO DELETE (ทุกวันตี 2)
+// 🔥 CREATE BOOKING (IMPROVED)
 // -----------------------------
-cron.schedule("0 2 * * *", async () => {
-  console.log("🕑 Auto deleting old bookings...");
+app.post("/booking", async (req, res) => {
+  try {
+    let { table_no, slots, total } = req.body;
+    table_no = String(table_no);
 
-  const { error } = await supabase
-    .from("bookings")
-    .delete()
-    .lt("end_time", new Date().toISOString());
+    if (!table_no || !slots || slots.length === 0) {
+      return res.status(400).json({ error: "Data missing" });
+    }
 
-  if (error) {
-    console.error("❌ AUTO DELETE ERROR:", error);
-  } else {
-    console.log("✅ Old bookings deleted");
+    const now = new Date();
+    
+    // ฟังก์ชันคำนวณเวลาแบบรองรับข้ามคืน
+    const parseSlot = (slotStr) => {
+      const [start, end] = slotStr.split(" - ");
+      const today = new Date();
+      
+      // สร้าง Date object โดยอิงจากวันที่ปัจจุบัน (Local Time)
+      const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                        parseInt(start.split(":")[0]), parseInt(start.split(":")[1]));
+      let endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                      parseInt(end.split(":")[0]), parseInt(end.split(":")[1]));
+
+      // ถ้าเวลาจบ น้อยกว่าหรือเท่ากับเวลาเริ่ม แปลว่าข้ามไปอีกวัน (เช่น 23:00 - 01:00)
+      if (endTime <= startTime) {
+        endTime.setDate(endTime.getDate() + 1);
+      }
+      return { start_time: startTime.toISOString(), end_time: endTime.toISOString() };
+    };
+
+    // 1. ตรวจสอบการจองซ้ำ (Server-side Validation)
+    const { data: existing } = await supabase
+      .from("bookings")
+      .select("start_time, end_time")
+      .eq("table_no", table_no)
+      .gte("end_time", now.toISOString());
+
+    for (let slot of slots) {
+      const { start_time, end_time } = parseSlot(slot);
+      const hasConflict = existing?.some(b => {
+        return (new Date(start_time) < new Date(b.end_time) && new Date(end_time) > new Date(b.start_time));
+      });
+
+      if (hasConflict) {
+        return res.status(400).json({ error: `Slot ${slot} is already taken.` });
+      }
+    }
+
+    // 2. เตรียมข้อมูล Insert (หารยอดเงินเฉลี่ยต่อ Slot)
+    const pricePerSlot = Math.floor(total / slots.length);
+    const inserts = slots.map((slot, i) => {
+      const { start_time, end_time } = parseSlot(slot);
+      return {
+        table_no,
+        slot: normalizeSlot(slot),
+        start_time,
+        end_time,
+        total: i === slots.length - 1 ? total - (pricePerSlot * (slots.length - 1)) : pricePerSlot
+      };
+    });
+
+    const { error: insertError } = await supabase.from("bookings").insert(inserts);
+    if (insertError) throw insertError;
+
+    res.json({ message: "Booking successful" });
+
+  } catch (err) {
+    console.error("❌ BOOKING ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
 // -----------------------------
-app.listen(5000, () => {
-  console.log("🚀 Server running on port 5000");
+// 🔥 ORDER FOOD (FIXED SECURITY)
+// -----------------------------
+app.post("/order", async (req, res) => {
+  try {
+    let { table_no, items } = req.body;
+    table_no = String(table_no);
+
+    // 1. ตรวจสอบว่าโต๊ะนี้มีการจองที่ยังไม่หมดเวลาจริงๆ หรือไม่
+    const { data: activeBooking } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("table_no", table_no)
+      .gt("end_time", new Date().toISOString())
+      .limit(1);
+
+    if (!activeBooking || activeBooking.length === 0) {
+      return res.status(400).json({ error: "โต๊ะนี้ไม่มีการจองที่ใช้งานอยู่ ไม่สามารถสั่งอาหารได้" });
+    }
+
+    // 2. ดึงราคาจาก Database (ห้ามเชื่อราคาจาก Frontend)
+    const foodIds = items.map(i => i.food_id);
+    const { data: foods } = await supabase.from("foods").select("id, price").in("id", foodIds);
+
+    let calculatedTotal = 0;
+    const orderItemsData = items.map(item => {
+      const food = foods.find(f => f.id === item.food_id);
+      if (!food) throw new Error(`Food ID ${item.food_id} not found`);
+      calculatedTotal += food.price * item.qty;
+      return { food_id: item.food_id, qty: item.qty };
+    });
+
+    // 3. สร้าง Order หลัก
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .insert([{ table_no, total: calculatedTotal }])
+      .select().single();
+
+    if (orderError) throw orderError;
+
+    // 4. สร้าง Order Items โดยโยงกับ ID ของ Order หลัก
+    const finalItems = orderItemsData.map(item => ({
+      ...item,
+      order_id: order.id
+    }));
+
+    const { error: itemsError } = await supabase.from("order_items").insert(finalItems);
+    if (itemsError) throw itemsError;
+
+    res.json({ message: "Order success", order_id: order.id, total: calculatedTotal });
+
+  } catch (err) {
+    console.error("❌ ORDER ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
+
+// -----------------------------
+// AUTO DELETE (ปรับเวลาให้เหมาะสม)
+// -----------------------------
+cron.schedule("0 3 * * *", async () => {
+  // ลบรายการที่จบไปแล้วมากกว่า 24 ชม. เพื่อเก็บ History ไว้ดูบ้างช่วงสั้นๆ
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  console.log("🧹 Cleaning up old data...");
+  await supabase.from("bookings").delete().lt("end_time", yesterday.toISOString());
+});
+
+app.listen(5000, () => console.log("🚀 1POOL SERVER RUNNING ON PORT 5000"));

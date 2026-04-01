@@ -39,9 +39,8 @@ function AppWrapper() {
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [history, setHistory] = useState<any[]>([]);
 
-
   // -----------------------------
-  // LOAD TABLES + REALTIME
+  // LOAD TABLES
   // -----------------------------
   useEffect(() => {
     const fetchTables = async () => {
@@ -77,23 +76,53 @@ function AppWrapper() {
   }, []);
 
   // -----------------------------
-  // AUTO SELECT TABLE FROM URL
+  // 🔥 FIX 1: QR TABLE (สำคัญมาก)
   // -----------------------------
   useEffect(() => {
     const tableId = searchParams.get("table");
 
     if (tableId && tables.length > 0) {
-      const found = tables.find((t) => t.id === tableId);
+      console.log("📱 URL TABLE:", tableId);
+
+      const found = tables.find(
+        (t) => String(t.id) === String(tableId) // ✅ FIX
+      );
 
       if (found) {
+        console.log("✅ FOUND TABLE:", found);
+
         setSelectedTable(found);
+
+        // 🔥 save กันหาย
+        localStorage.setItem("table", String(found.id));
+
         navigate("/booking");
+      } else {
+        console.log("❌ TABLE NOT FOUND");
       }
     }
   }, [tables]);
 
   // -----------------------------
-  // CART FUNCTIONS
+  // 🔥 FIX 2: RESTORE TABLE
+  // -----------------------------
+  useEffect(() => {
+    const saved = localStorage.getItem("table");
+
+    if (!saved || tables.length === 0) return;
+
+    const found = tables.find(
+      (t) => String(t.id) === String(saved)
+    );
+
+    if (found) {
+      console.log("💾 RESTORE TABLE:", found);
+      setSelectedTable(found);
+    }
+  }, [tables]);
+
+  // -----------------------------
+  // CART
   // -----------------------------
   const addToCart = (product: any) => {
     setCart((prev) => {
@@ -120,7 +149,7 @@ function AppWrapper() {
   };
 
   // -----------------------------
-  // TOTAL CALC
+  // TOTAL
   // -----------------------------
   const tableTotal =
     selectedTable && selectedSlots.length > 0
@@ -141,17 +170,18 @@ function AppWrapper() {
     setCart([]);
     setSelectedSlots([]);
     setSelectedTable(null);
+    localStorage.removeItem("table"); // 🔥 เพิ่ม
   };
 
   // -----------------------------
-  // 🔥 FIX สำคัญตรงนี้
+  // CONFIRM
   // -----------------------------
   const confirmOrder = (orderData: any) => {
     const fullOrder = {
       ...orderData,
       id: Date.now(),
       table: selectedTable?.id || orderData.table_no || null,
-      slots: orderData.slots || selectedSlots, // ✅ FIX
+      slots: orderData.slots || selectedSlots,
       tableTotal,
       foodTotal,
       total: grandTotal,
